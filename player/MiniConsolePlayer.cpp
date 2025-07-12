@@ -28,9 +28,16 @@ int main(int argc, char** argv) {
     AudioEngine engine;
     float vol;
 
-    if (!engine.loadFile(path)) {
-        std::cerr << "Datei konnte nicht geladen werden: " << path << "\n";
-        return 1;
+    if (path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0) {
+        if (!engine.loadURL(path)) {
+            std::cerr << "URL konnte nicht geladen werden: " << path << "\n";
+            return 1;
+        }
+    } else {
+        if (!engine.loadFile(path)) {
+            std::cerr << "Datei konnte nicht geladen werden: " << path << "\n";
+            return 1;
+        }
     }
     
 
@@ -38,7 +45,6 @@ int main(int argc, char** argv) {
     engine.play();
 
     bool running = true;
-#include <conio.h>  // Wichtig für _getch()
 
 while (running) 
 {

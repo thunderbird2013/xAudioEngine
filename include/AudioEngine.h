@@ -38,6 +38,7 @@
 #include "AudioEngine.h"
 #include "miniaudio.h"
 #include "AudioDecoder.h"
+#include "StreamingBuffer.h"
 
 #if defined(_WIN32)
   #if defined(AUDIOENGINE_STATIC)
@@ -57,6 +58,7 @@ public:
     ~AudioEngine();
 
     bool loadFile(const std::string& path);
+    bool loadURL(const std::string& url);
     void play();
     void stop();
     void setVolume(float volume);
@@ -76,6 +78,8 @@ private:
     void logDebug(const std::string& message);
     
     std::unique_ptr<AudioDecoder> decoder; // Aktueller Audio-Decoder
+    std::shared_ptr<StreamingBuffer> streamBuffer; 
+
 
     float volume = 1.0f; // Lautstärke (0.0 - 1.0)
     int sampleRate = 0;

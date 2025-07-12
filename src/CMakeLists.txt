@@ -8,6 +8,14 @@ file(GLOB LIB_SOURCES
 
 add_library(AudioEngine ${LIB_SOURCES})  # erzeugt .lib oder .dll je nach BUILD_SHARED_LIBS
 
+# Beispiel: libcurl statisch einbinden
+add_library(libcurl STATIC IMPORTED)
+
+set_target_properties(libcurl PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/thirdparty/libcurl_static/lib/libcurl.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/libcurl_static/include"
+)
+
 target_include_directories(AudioEngine PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/thirdparty
@@ -16,6 +24,7 @@ target_include_directories(AudioEngine PUBLIC
 
 target_compile_definitions(AudioEngine PRIVATE
     _CRT_SECURE_NO_WARNINGS
+    CURL_STATICLIB
 )
 
 # Definiere Export-Symbol je nach Build-Art
@@ -25,7 +34,17 @@ else()
     target_compile_definitions(AudioEngine PUBLIC AUDIOENGINE_STATIC)
 endif()
 
-target_link_libraries(AudioEngine ole32)
+target_link_libraries(AudioEngine PRIVATE
+    libcurl
+    ws2_32
+    crypt32
+    winmm
+    wldap32
+    advapi32
+    user32
+    ole32
+    secur32
+)
 
 # Installiere die erzeugte Library
 install(TARGETS AudioEngine
