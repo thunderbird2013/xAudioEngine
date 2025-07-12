@@ -1,3 +1,35 @@
+//
+// AudioEngine
+// -----------
+// Die AudioEngine-Klasse ist das zentrale Steuerungsmodul zur Audiowiedergabe. 
+// Sie kapselt ein Ausgabegerät (ma_device), verwaltet den AudioDecoder und 
+// steuert Lautstärke, Wiedergabe, Position und Streaming.
+//
+// Die Engine unterstützt verschiedene Audioformate über eine einheitliche Decoder-Schnittstelle.
+// Audio wird gestreamt und verarbeitet über miniaudio (https://miniaud.io).
+//
+// Öffentliche Methoden:
+// - loadFile(...)               Lädt und initialisiert eine Audiodatei über einen Decoder.
+// - play(), stop()              Startet bzw. stoppt die Wiedergabe.
+// - setVolume(...), getVolume() Setzt oder liest die aktuelle Lautstärke (0.0 - 1.0).
+// - seek(...)                   Springt zu einer bestimmten Frame-Position im Stream.
+// - isPlaying()                 Gibt zurück, ob Audio aktiv abgespielt wird.
+// - getCurrentFrame()           Liefert die aktuelle Abspielposition in Frames.
+// - getSampleRate()             Gibt die Sample-Rate der aktuellen Datei zurück.
+// - getTotalFrames()            Gesamtanzahl der PCM-Frames im Stream.
+// - getTotalTimeSeconds()       Wiedergabedauer in Sekunden.
+// - getCurrentTimeSeconds()     Aktuelle Wiedergabezeit in Sekunden.
+//
+// Private Member:
+// - decoder                     Der aktuelle Decoder (z. B. MP3, OGG, FLAC...)
+// - device                      Das miniaudio-Gerät zur Audiowiedergabe.
+// - volume                      Lautstärkewert (0.0 bis 1.0).
+// - sampleRate, channels        Technische Metadaten des geladenen Audios.
+// - Playing                     Wiedergabestatus-Flag.
+//
+// Copyright (C) 2025 by the Audio_Core project contributors.
+//
+
 #pragma once
 #include <string>
 #include <memory>

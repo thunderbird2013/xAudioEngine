@@ -1,7 +1,23 @@
+//
 // AudioDecoder Interface
-// This file defines the interface for audio decoders in the Audio_Core project.
-// It includes methods for loading audio files, decoding audio data, seeking within the audio stream, and retrieving metadata such as sample rate and channel count.
-// Copyright (C) 2025 by the Audio_Core project contributors.
+// -----------------------
+// Dieses Interface definiert eine einheitliche Abstraktion für verschiedene Audio-Decoder, 
+// die innerhalb der Audio_Core-Engine verwendet werden. Es ermöglicht das Laden, Dekodieren, 
+// Spulen und Abrufen von Metadaten beliebiger Audioformate.
+//
+// Implementierungen dieses Interfaces kapseln die format-spezifische Logik für MP3, OGG, FLAC, WAV usw.,
+// und liefern PCM-Daten an die AudioEngine zur weiteren Verarbeitung und Wiedergabe.
+//
+// Methodenübersicht:
+// - load(...)          Lädt und initialisiert eine Audiodatei.
+// - decode(...)        Liest und dekodiert eine bestimmte Anzahl von PCM-Frames.
+// - seek(...)          Springt zu einem bestimmten Frame innerhalb des Audiostreams.
+// - getSampleRate()    Gibt die Sample-Rate (Hz) des geladenen Audiomaterials zurück.
+// - getChannels()      Gibt die Anzahl der Audiokanäle zurück (z.B. Mono, Stereo).
+// - getCursor()        Gibt die aktuelle Abspielposition (in Frames) zurück.
+// - getTotalFrames()   Gibt die Gesamtanzahl an Frames in der Datei zurück.
+//
+// Copyright (C) 2025 by the xAudioEngine project contributors.
 //
 
 #pragma once    
