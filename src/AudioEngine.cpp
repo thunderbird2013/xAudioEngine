@@ -2,14 +2,15 @@
 #include "MP3Decoder.h"
 #include "FlacDecoder.h"
 #include "OggDecoder.h"
+#include "WavDecoder.h"
 #include "Logger.h"
 #include <filesystem>
 #include <cstdint>
 #include <cstring>
 
-static ma_device device;
 
 AudioEngine::AudioEngine() {
+    logDebug("xAudioEngine Copyright (c) 2025 by Matthias Stoltze");
     logDebug("AudioEngine erstellt.");
 }
 
@@ -31,6 +32,9 @@ bool AudioEngine::loadFile(const std::string& path) {
     } else if (ext == ".ogg") {
         decoder = std::make_unique<OggDecoder>();
         logDebug("OggDecoder ausgewählt.");
+    } else if (ext == ".wav") {
+        decoder = std::make_unique<WavDecoder>();
+        logDebug("WavDecoder ausgewählt.");    
     } else {
         logError("Nicht unterstützte Dateierweiterung: " + ext);
         return false;
@@ -48,7 +52,8 @@ bool AudioEngine::loadFile(const std::string& path) {
     config.playback.format   = ma_format_s16;
     config.playback.channels = channels;
     config.sampleRate        = sampleRate;
-    config.dataCallback      = [](ma_device* device, void* output, const void*, ma_uint32 frameCount) {
+    config.dataCallback      = [](ma_device* device, void* output, const void*, ma_uint32 frameCount) 
+    {
         AudioEngine* engine = static_cast<AudioEngine*>(device->pUserData);
         short* out = static_cast<short*>(output);
 
@@ -57,6 +62,12 @@ bool AudioEngine::loadFile(const std::string& path) {
             std::memset(out + framesRead * engine->channels, 0,
                          (frameCount - framesRead) * engine->channels * sizeof(short));
         }
+
+        if (framesRead == 0) {
+            engine->Playing = false;            
+        }
+
+        
     };
     config.pUserData = this;
 
@@ -75,6 +86,12 @@ void AudioEngine::play() {
     } else {
         logDebug("Audiowiedergabe gestartet.");
     }
+    
+     Playing = true;
+}
+
+bool AudioEngine::isPlaying() const {   
+    return Playing ; // Hier wird der Status der Wiedergabe zurückgegeben
 }
 
 void AudioEngine::stop() {
@@ -83,6 +100,7 @@ void AudioEngine::stop() {
     } else {
         logDebug("Audiowiedergabe gestoppt.");
     }
+    Playing = false;
 }
 
 void AudioEngine::setVolume(float volume) {
@@ -99,9 +117,6 @@ bool AudioEngine::seek(int frame) {
     return false;
 }
 
-bool AudioEngine::isPlaying() const {
-    return ma_device_get_state(&device) == ma_device_state_started;
-}
 
 void AudioEngine::logError(const std::string& message) {
     Logger::log("[ERROR] " + message);
@@ -135,9 +150,10 @@ float AudioEngine::getVolume() const {
     return volume;
 }
 
+double AudioEngine::getCurrentTimeSeconds() const {
+    if (getSampleRate() == 0) return 0.0;
+    return static_cast<double>(decoder->getCursor()) / getSampleRate();
+}
 
-//double AudioEngine::getTotalTimeSeconds() const {
-//    return static_cast<double>(getTotalFrames()) / getSampleRate();
-//}
 
 

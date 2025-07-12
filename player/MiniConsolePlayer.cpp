@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <conio.h>
 #include <algorithm>
 
 
@@ -33,65 +34,62 @@ int main(int argc, char** argv) {
     }
     
 
-    engine.setVolume(1.0f);
+    engine.setVolume(0.9f);
     engine.play();
 
     bool running = true;
-    while (running) {
+#include <conio.h>  // Wichtig für _getch()
 
-        std::cout << "Spiele: " << path << "\n[q = Quit, p = Play/Pause, s = Stop, f = +5s, b = -5s, +/- = Volume]\n";
-        std::cout << "[INFO] [DEBUG] Gesamtdauer: " << formatTime(engine.getTotalTimeSeconds()) << "\n";
+while (running) 
+{
+    // Nur eine Zeile für die Position verwenden
+    std::cout << "\rPos: " << formatTime(engine.getCurrentTimeSeconds()) 
+              << " / " << formatTime(engine.getTotalTimeSeconds()) 
+              << "   (↑↓ Vol, ←→ Seek, p Play, s Stop, q Quit)   " << std::flush;
 
-        char c;
-        std::cin >> c;
-
-        switch (c) {
-            case 'q':
-                engine.stop();
-                running = false;
-                break;          
-            case '+':
-                vol = engine.getVolume();
-                vol = std::min(1.0f, vol + 0.1f);
-                engine.setVolume(vol);
-                std::cout << "Volume: " << vol << "\n";
-                break;
-            case '-':
-                 vol = engine.getVolume();
-                 vol = std::max(0.0f, vol - 0.1f);
-                 engine.setVolume(vol);
-                 std::cout << "Volume: " << vol << "\n";
-                break;
-            case 's':
-                engine.stop();
-                std::cout << "Gestoppt.\n";
-                break;
-            case 'p':
-                engine.play();
-                std::cout << "Wiedergabe gestartet.\n";
-                break;
-            case 'f': { // Vorspulen
-                    int sekunden = 5;
-                    int newFrame = engine.getCurrentFrame() + sekunden * engine.getSampleRate();
-                    if (engine.seek(newFrame)) {
-                        std::cout << "+5s\n";
-                    } else {
-                        std::cout << "Vorspulen fehlgeschlagen.\n";
-                    }
+    if (!engine.isPlaying()) {
+        std::cout << "\nWiedergabe beendet.\n";
+     return 0;
+    }
+      // Tasteneingabe prüfen
+    if (_kbhit()) {
+        int ch = _getch();
+        if (ch == 0 || ch == 224) {
+            int special = _getch();
+            switch (special) {
+                case 72: { // ↑ Volume +
+                    float vol = engine.getVolume();
+                    vol = std::min(1.0f, vol + 0.1f);
+                    engine.setVolume(vol);
                     break;
+                }
+                case 80: { // ↓ Volume -
+                    float vol = engine.getVolume();
+                    vol = std::max(0.0f, vol - 0.1f);
+                    engine.setVolume(vol);
+                    break;
+                }
+                case 77: { // → Seek +
+                    int newFrame = engine.getCurrentFrame() + 5 * engine.getSampleRate();
+                    engine.seek(newFrame);
+                    break;
+                }
+                case 75: { // ← Seek -
+                    int newFrame = std::max(0, engine.getCurrentFrame() - 5 * engine.getSampleRate());
+                    engine.seek(newFrame);
+                    break;
+                }
             }
-            case 'b': { // Zurueckspulen
-                    int sekunden = 5;
-                    int newFrame = engine.getCurrentFrame() - sekunden * engine.getSampleRate();
-                    if (engine.seek(std::max(0, newFrame))) {
-                        std::cout << "-5s\n";
-                    } else {
-                        std::cout << "Ruecksprung fehlgeschlagen.\n";
-                    }
-                    break;
-            }    
+        } else {
+            switch (ch) {
+                case 'q': running = false; engine.stop(); break;
+                case 's': engine.stop(); break;
+                case 'p': engine.play(); break;
+            }
         }
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+}
     return 0;
 }

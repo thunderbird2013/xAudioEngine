@@ -35,6 +35,7 @@ public:
     int  getSampleRate() const;
     uint64_t getTotalFrames() const;
     double getTotalTimeSeconds() const;
+    double getCurrentTimeSeconds() const;
 
 
 private:
@@ -42,10 +43,11 @@ private:
     void logError(const std::string& message);
     void logDebug(const std::string& message);
     
-    std::unique_ptr<AudioDecoder> decoder;
+    std::unique_ptr<AudioDecoder> decoder; // Aktueller Audio-Decoder
 
-    float volume = 1.0f; // z. B. im privaten Bereich
+    float volume = 1.0f; // Lautstärke (0.0 - 1.0)
     int sampleRate = 0;
     int channels = 0;
-    ma_device device;    
+    bool Playing = true;
+    ma_device device;    // Audio-Ausgabegerät
 };
