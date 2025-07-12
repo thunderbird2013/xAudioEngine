@@ -13,6 +13,7 @@
 #include <thread>
 #include <memory>
 #include <curl/curl.h>
+#include <cassert> 
 
 
 AudioEngine::AudioEngine() {
@@ -89,50 +90,38 @@ bool AudioEngine::loadFile(const std::string& path) {
 }
 
 bool AudioEngine::loadURL(const std::string& url) {
-
-    //if (ma_device_get_state(&device) == ma_device_state_started) {
-    //    stop();
-    //    logDebug("Audiowiedergabe gestoppt, um URL zu laden.");
-   // }
-
-    streamBuffer = std::make_shared<StreamingBuffer>(512 * 1024);
-
-    std::thread([url, buffer = streamBuffer]() {
-        CURL* curl = curl_easy_init();
-        if (!curl) return;
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, [](char* ptr, size_t size, size_t nmemb, void* userdata) -> 
-        size_t {
-            auto* buf = static_cast<StreamingBuffer*>(userdata);
-            return buf->write(reinterpret_cast<uint8_t*>(ptr), size * nmemb);
-        });
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer.get());
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);          
-    }).detach();
-
-    while (streamBuffer->getBufferedBytes() < 16 * 1024) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if (ma_device_get_state(&device) == ma_device_state_started) {
+        stop();
+        logDebug("Audiowiedergabe gestoppt, um URL zu laden.");
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    streamBuffer = std::make_shared<StreamingBuffer>(512 * 1024);
+    assert(streamBuffer && "StreamingBuffer konnte nicht erstellt werden.");
+    downloader = std::make_unique<StreamingDownloader>(*streamBuffer);
+    assert(downloader && "StreamingDownloader konnte nicht erstellt werden.");
+
+    if (!downloader->start(url)) {
+        logError("Stream konnte nicht gestartet werden.");
+        return false;
+    }
+
+    logDebug("Server Content-Type: " + downloader->getContentType());
+
+    // Kurz warten, bis ein paar Daten im Buffer sind
+    //int timeout = 0;
+    //while (streamBuffer->getBufferedBytes() < 16 * 1024 && timeout++ < 100) {
+    //    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    //}
 
     decoder = std::make_unique<StreamMP3Decoder>(*streamBuffer);
-    if (!decoder) {
-        logError("StreamMP3Decoder konnte nicht erzeugt werden.");
+     assert(decoder && "StreamMP3Decoder konnte nicht erstellt werden.");
+    if (!decoder || decoder->getSampleRate() == 0) {
+        logError("StreamMP3Decoder konnte nicht initialisiert werden.");
         return false;
     }
 
     sampleRate = decoder->getSampleRate();
     channels = decoder->getChannels();
-
-    if (decoder->getSampleRate() == 0 || decoder->getChannels() == 0) {
-    logError("Ungültiger MP3-Stream – Decoder konnte keine gültigen Parameter lesen.");
-    return false;
-}
 
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
     config.playback.format   = ma_format_s16;
@@ -140,6 +129,7 @@ bool AudioEngine::loadURL(const std::string& url) {
     config.sampleRate        = sampleRate;
     config.dataCallback      = [](ma_device* device, void* output, const void*, ma_uint32 frameCount) {
         auto* engine = static_cast<AudioEngine*>(device->pUserData);
+        assert(engine && engine->decoder);
         short* out = static_cast<short*>(output);
         size_t framesRead = engine->decoder->decode(out, frameCount);
         if (framesRead < frameCount) {
@@ -148,17 +138,20 @@ bool AudioEngine::loadURL(const std::string& url) {
     };
     config.pUserData = this;
 
-    if (ma_device_init(NULL, &config, &device) != MA_SUCCESS) {
+    if (ma_device_init(nullptr, &config, &device) != MA_SUCCESS) {
         logError("Fehler beim Initialisieren des Audiogeräts.");
         return false;
     }
 
     if (ma_device_start(&device) != MA_SUCCESS) {
-        logError("Audiogerät konnte nicht gestartet werden.");
-        return false;
-    }
+      logError("Fehler beim Starten des Audiogeräts.");
+    return false;
+}
+
     return true;
 }
+
+
 
 
 

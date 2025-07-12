@@ -34,11 +34,14 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <memory>
 
 #include "AudioEngine.h"
 #include "miniaudio.h"
 #include "AudioDecoder.h"
 #include "StreamingBuffer.h"
+#include "StreamingDownloader.h"
+
 
 #if defined(_WIN32)
   #if defined(AUDIOENGINE_STATIC)
@@ -79,6 +82,7 @@ private:
     
     std::unique_ptr<AudioDecoder> decoder; // Aktueller Audio-Decoder
     std::shared_ptr<StreamingBuffer> streamBuffer; 
+    std::unique_ptr<StreamingDownloader> downloader;
 
 
     float volume = 1.0f; // Lautstärke (0.0 - 1.0)
