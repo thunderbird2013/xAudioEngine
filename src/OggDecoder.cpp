@@ -1,0 +1,43 @@
+#include "stb_vorbis_all.h"
+#include <cstdint>
+#include "OggDecoder.h"
+
+OggDecoder::OggDecoder() = default;
+
+OggDecoder::~OggDecoder() {
+    if (vorbis) stb_vorbis_close(vorbis);
+}
+
+bool OggDecoder::load(const std::string& path) {
+    int error;
+    vorbis = stb_vorbis_open_filename(path.c_str(), &error, nullptr);
+    if (!vorbis) return false;
+    info = stb_vorbis_get_info(vorbis);
+    stb_vorbis_seek_start(vorbis);
+    return true;
+}
+
+size_t OggDecoder::decode(short* buffer, size_t framesToRead) {
+    if (!vorbis) return 0;
+    return stb_vorbis_get_samples_short_interleaved(vorbis, info.channels, buffer, static_cast<int>(framesToRead * info.channels));
+}
+
+bool OggDecoder::seek(int frame) {
+    return vorbis && stb_vorbis_seek(vorbis, frame) != 0;
+}
+
+int OggDecoder::getSampleRate() const {
+    return vorbis ? info.sample_rate : 0;
+}
+
+int OggDecoder::getChannels() const {
+    return vorbis ? info.channels : 0;
+}
+
+uint64_t OggDecoder::getCursor() const {
+    return stb_vorbis_get_sample_offset(vorbis);
+}
+
+uint64_t OggDecoder::getTotalFrames() const {
+    return stb_vorbis_stream_length_in_samples(vorbis);
+}
