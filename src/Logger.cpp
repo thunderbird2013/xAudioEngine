@@ -12,7 +12,7 @@ static void ensureLogFile() {
     static bool initialized = false;
     if (!initialized) {
        // std::filesystem::create_directory("log"); // Stelle sicher, dass Ordner existiert
-        logFile.open("audioengine.log", std::ios::app); // Anhängen
+        logFile.open("xAudioEngine.log", std::ios::app); // Anhängen
         initialized = true;
     }
 }

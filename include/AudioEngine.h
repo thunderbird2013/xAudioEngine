@@ -42,6 +42,8 @@
 #include "StreamingBuffer.h"
 #include "StreamingDownloader.h"
 
+#include <aubio/aubio.h>
+
 
 #if defined(_WIN32)
   #if defined(AUDIOENGINE_STATIC)
@@ -73,9 +75,19 @@ public:
     uint64_t getTotalFrames() const;
     double getTotalTimeSeconds() const;
     double getCurrentTimeSeconds() const;
+    std::vector<std::string> getAvailableOutputDevices();
+    bool initAudioDevice();
+    bool initAudioDeviceWithAdapter(int deviceIndex);
+    float getBPM();
+    
 
 
 private:
+
+    std::string resolvePlaylist(const std::string& playlistUrl);
+    static void maCallback(ma_device* device, void* output, const void* input, ma_uint32 frameCount);
+
+    float analyzeBPM(float* input, uint_t numSamples);
 
     void logError(const std::string& message);
     void logDebug(const std::string& message);
@@ -84,6 +96,7 @@ private:
     std::shared_ptr<StreamingBuffer> streamBuffer; 
     std::unique_ptr<StreamingDownloader> downloader;
 
+    std::string lastFilePath;
 
     float volume = 1.0f; // Lautstärke (0.0 - 1.0)
     int sampleRate = 0;

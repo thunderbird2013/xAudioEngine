@@ -1,40 +1,65 @@
 # Option für statisch vs. dynamisch
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 
+# Alle Quelldateien inkl. stb_vorbis
 file(GLOB LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
     ${PROJECT_SOURCE_DIR}/thirdparty/stb_vorbis.c
 )
 
-add_library(AudioEngine ${LIB_SOURCES})  # erzeugt .lib oder .dll je nach BUILD_SHARED_LIBS
+# --- aubio statisch importieren ---
+add_library(aubio STATIC IMPORTED)
+set_target_properties(aubio PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/thirdparty/aubio/lib/aubio.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/aubio/include"
+)
 
-# Beispiel: libcurl statisch einbinden
+# --- curl statisch importieren ---
 add_library(libcurl STATIC IMPORTED)
-
 set_target_properties(libcurl PROPERTIES
     IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/thirdparty/libcurl_static/lib/libcurl.lib"
     INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/libcurl_static/include"
 )
 
-target_include_directories(AudioEngine PUBLIC
+# --- zlib statisch importieren ---
+add_library(zlib STATIC IMPORTED)
+set_target_properties(zlib PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/thirdparty/zlib/lib/zlib.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/zlib/include"
+)
+
+# --- Hauptbibliothek erzeugen ---
+add_library(xAudioEngine ${LIB_SOURCES})
+
+# --- Include-Verzeichnisse ---
+target_include_directories(xAudioEngine PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/thirdparty
     ${CMAKE_SOURCE_DIR}/thirdparty/miniaudio
+    ${CMAKE_SOURCE_DIR}/thirdparty/aubio/include
 )
 
-target_compile_definitions(AudioEngine PRIVATE
+# --- Compiler-Definitionen ---
+target_compile_definitions(xAudioEngine PRIVATE
     _CRT_SECURE_NO_WARNINGS
     CURL_STATICLIB
 )
 
-# Definiere Export-Symbol je nach Build-Art
-if(BUILD_SHARED_LIBS)
-    target_compile_definitions(AudioEngine PRIVATE AUDIOENGINE_EXPORTS)
-else()
-    target_compile_definitions(AudioEngine PUBLIC AUDIOENGINE_STATIC)
+# --- Clang Workaround ---
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(xAudioEngine PRIVATE -Wno-unused-variable -Wno-unused-private-field)
 endif()
 
-target_link_libraries(AudioEngine PRIVATE
+# --- Build-Typ spezifisch: DLL oder statisch ---
+if(BUILD_SHARED_LIBS)
+    target_compile_definitions(xAudioEngine PRIVATE AUDIOENGINE_EXPORTS)
+else()
+    target_compile_definitions(xAudioEngine PUBLIC AUDIOENGINE_STATIC)
+endif()
+
+# --- Verlinkung ---
+target_link_libraries(xAudioEngine PRIVATE
+    aubio
     libcurl
     ws2_32
     crypt32
@@ -44,16 +69,17 @@ target_link_libraries(AudioEngine PRIVATE
     user32
     ole32
     secur32
+    zlib
 )
 
-# Installiere die erzeugte Library
-install(TARGETS AudioEngine
-    RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/dist/Release      # .dll
-    LIBRARY DESTINATION ${CMAKE_BINARY_DIR}/dist/Release      # .so / .dll
-    ARCHIVE DESTINATION ${CMAKE_BINARY_DIR}/static_lib/Release # .lib
+# --- Installation der kompilierten Lib ---
+install(TARGETS xAudioEngine
+    RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/dist/Release
+    LIBRARY DESTINATION ${CMAKE_BINARY_DIR}/dist/Release
+    ARCHIVE DESTINATION ${CMAKE_BINARY_DIR}/static_lib/Release
 )
 
-# Header-Dateien mitinstallieren
+# --- Header mitinstallieren ---
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_BINARY_DIR}/dist/include
         FILES_MATCHING PATTERN "*.h")

@@ -21,6 +21,6 @@ public:
 private:
     struct stb_vorbis* vorbis = nullptr;
     stb_vorbis_info info{};
-    bool initialized = false;
+    //bool initialized = false;
 };
 

@@ -44,7 +44,7 @@ size_t MP3Decoder::decode(short* buffer, size_t framesToRead) {
      // Soft Limiter anwenden
     for (size_t i = 0; i < framesDecoded * mp3.channels; ++i) {
         float fsample = buffer[i] / 32768.0f;
-        float threshold = 0.9f;
+       // float threshold = 0.9f;
        if (std::abs(fsample) > SOFT_LIMIT_THRESHOLD) {
              fsample = SOFT_LIMIT_THRESHOLD * (fsample > 0 ? 1.0f : -1.0f);
         }
