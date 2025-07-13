@@ -280,26 +280,27 @@ int main(int argc, char** argv) {
         std::cout << "(\u2191\u2193 Vol, \u2190\u2192 Seek, Pg\u2191/\u2193 Track, p Play, s Stop, q Quit)\n";    
         std::cout << std::flush;
 
-       // if (!engine.isPlaying()) {
-       //     std::cout << "\nWiedergabe beendet.\n";
-       //     return 0;
-       // }
+       static bool userStopped = false;  // Zustand merken
 
        if (!engine.isPlaying()) {
-            // Wenn Playlist vorhanden → zum nächsten springen
-            if (!playlist.empty() && trackIndex + 1 < playlist.size()) {
-                ++trackIndex;
-                path = playlist[trackIndex];
-                engine.loadFile(path);
-                engine.play();
-                analyzeBPMInBackground(engine);
-                clearConsole();
-                continue; // → weiter in der Schleife
-            } else {
-                // Ende der Playlist erreicht
-                std::cout << "\nPlaylist vollständig abgespielt.\n";
-                break;
+
+            if (!userStopped) {
+                // Wenn Playlist vorhanden → zum nächsten springen
+                if (!playlist.empty() && trackIndex + 1 < playlist.size()) {
+                    ++trackIndex;
+                    path = playlist[trackIndex];
+                    engine.loadFile(path);
+                    engine.play();
+                    analyzeBPMInBackground(engine);
+                    clearConsole();
+                    continue; // → weiter in der Schleife
+                } else {
+                    // Ende der Playlist erreicht
+                    std::cout << "\nPlaylist vollständig abgespielt.\n";
+                    break;
+                }
             }
+            // Wenn gestoppt, tue nichts → bleibt im gestoppten Zustand
         }
 
 
@@ -339,8 +340,8 @@ int main(int argc, char** argv) {
             } else {
                 switch (ch) {
                     case 'q': running = false; engine.stop(); break;
-                    case 's': engine.stop(); break;
-                    case 'p': engine.play(); break;                                       
+                    case 's': engine.stop(); userStopped = true; break;
+                    case 'p': engine.play(); userStopped = false; break;                                       
                 }
             }
         }
