@@ -18,7 +18,6 @@
 #include <sstream>
 #include <aubio/aubio.h>
 
-
 AudioEngine::AudioEngine() {
     logDebug("xAudioEngine Copyright (c) 2025 by Matthias Stoltze");
     logDebug("AudioEngine erstellt.");
@@ -158,7 +157,7 @@ void AudioEngine::stop() {
     if (ma_device_stop(&device) != MA_SUCCESS) {
         logError("Audiowiedergabe konnte nicht gestoppt werden.");
     } else {
-        logDebug("Audiowiedergabe gestoppt.");
+      //  logDebug("Audiowiedergabe gestoppt.");
     }
     Playing = false;
 }
@@ -382,19 +381,28 @@ float AudioEngine::analyzeBPM(float* input, uint_t numSamples) {
     uint_t winSize = 1024;
 
     aubio_tempo_t* tempo = new_aubio_tempo("default", winSize, hopSize, samplerate);
+    aubio_tempo_set_silence(tempo, -90.0f); // niedriger, damit leise Onsets erkannt werden
+    aubio_tempo_set_threshold(tempo, 0.1f); // empfindlicher machen
+
     fvec_t* vec = new_fvec(hopSize);
+    fvec_t* out = new_fvec(1);
 
     for (uint_t i = 0; i + hopSize < numSamples; i += hopSize) {
         for (uint_t j = 0; j < hopSize; ++j) {
             vec->data[j] = input[i + j];
         }
-        fvec_t* out = new_fvec(1);
+
         aubio_tempo_do(tempo, vec, out);
-    }
+        
+    }    
+
 
     float bpm = aubio_tempo_get_bpm(tempo);
-    del_aubio_tempo(tempo);
+    
     del_fvec(vec);
+    del_fvec(out);
+
+    del_aubio_tempo(tempo);
 
     int roundedBPM = static_cast<int>(std::round(bpm));
     //logDebug("BPM geschätzt: " + std::to_string(roundedBPM));
@@ -438,6 +446,22 @@ float AudioEngine::getBPM() {
     }
 
     return analyzeBPM(floatBuffer.data(), static_cast<uint_t>(floatBuffer.size()));
+}
+
+//IDV1-Tags Reading All decoders have this
+std::string AudioEngine::getTitle() const {
+    if (!decoder) return {};
+    return decoder->getDecodedAudio().title;    
+}
+
+std::string AudioEngine::getArtist() const {
+    if (!decoder) return {};
+    return decoder->getDecodedAudio().artist;
+}
+
+std::string AudioEngine::getAlbum() const {
+    if (!decoder) return {};
+    return decoder->getDecodedAudio().album;
 }
 
 

@@ -20,8 +20,14 @@ static void ensureLogFile() {
 void Logger::log(const std::string& msg, Level level) {
     std::lock_guard<std::mutex> lock(logMutex);
     ensureLogFile();
-    std::string line = "[" + std::string(levelToString(level)) + "] " + msg;
-    std::cout << line << std::endl;
+   
+    std::string line = "[" + std::string(levelToString(level)) + "] " + msg; // Formatierung der Log-Nachricht
+
+    #define LOG_TO_CONSOLE 0 // Definiere, ob die Log-Nachrichten auch auf der Konsole ausgegeben werden sollen
+    #if LOG_TO_CONSOLE
+    std::cout << line << std::endl; // Ausgabe auf der Konsole
+    #endif
+
     if (logFile.is_open()) {
         logFile << line << std::endl;
     }

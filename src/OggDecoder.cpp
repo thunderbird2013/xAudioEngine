@@ -10,11 +10,34 @@ OggDecoder::~OggDecoder() {
 
 bool OggDecoder::load(const std::string& path) {
     int error;
+
     vorbis = stb_vorbis_open_filename(path.c_str(), &error, nullptr);
     if (!vorbis) return false;
+
     info = stb_vorbis_get_info(vorbis);
+
     stb_vorbis_seek_start(vorbis);
+
+    stb_vorbis_comment comment = stb_vorbis_get_comment(vorbis);
+
+    for (int i = 0; i < comment.comment_list_length; ++i) {
+   
+        std::string entry(comment.comment_list[i]);
+        auto pos = entry.find('=');
+      
+        if (pos != std::string::npos) {
+            std::string key = entry.substr(0, pos);
+            std::string val = entry.substr(pos + 1);
+
+            if (key == "TITLE")       decodedAudio.title  = val;
+            else if (key == "ARTIST") decodedAudio.artist = val;
+            else if (key == "ALBUM")  decodedAudio.album  = val;
+        }
+
+    }
+
     return true;
+    
 }
 
 size_t OggDecoder::decode(short* buffer, size_t framesToRead) {

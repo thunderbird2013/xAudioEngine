@@ -42,4 +42,11 @@ public:
     virtual int getChannels() const = 0;
     virtual uint64_t getCursor() const = 0;
     virtual uint64_t getTotalFrames() const = 0;
+
+    virtual const DecodedAudio& getDecodedAudio() const {
+        static DecodedAudio empty;
+    return empty;
+    }
+
+    
 };

@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
+#include <fstream>  
+#include <cstring>
 #include "dr_mp3.h"
 
 constexpr float SOFT_LIMIT_THRESHOLD = 0.9441f;
@@ -13,10 +15,9 @@ T clamp(T v, T lo, T hi) {
 
 bool MP3Decoder::load(const std::string& path) {
     if (!drmp3_init_file(&mp3, path.c_str(), nullptr)) {
-
         return false;
-
     }
+    
     initialized = true;
 
     drmp3_uint64 frameCount = drmp3_get_pcm_frame_count(&mp3);
@@ -98,4 +99,31 @@ uint64_t MP3Decoder::getTotalFrames() const {
 
 int MP3Decoder::getBitrateKbps() const {
     return bitrateKbps;
+}
+
+void MP3Decoder::readID3v1Tag(const std::string& path) {
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file) return;
+
+    std::streamsize size = file.tellg();
+    if (size < 128) return;
+
+    file.seekg(-128, std::ios::end);
+    char tag[128];
+    file.read(tag, 128);
+
+    if (std::strncmp(tag, "TAG", 3) == 0) {
+        auto& t = decodedAudio.title;
+        auto& a = decodedAudio.artist;
+        auto& al = decodedAudio.album;
+
+        t.assign(tag + 3, 30);
+        a.assign(tag + 33, 30);
+        al.assign(tag + 63, 30);
+
+        auto trim = [](std::string& s) {
+            s.erase(s.find_last_not_of(" \0", std::string::npos) + 1);
+        };
+        trim(t); trim(a); trim(al);
+    }
 }

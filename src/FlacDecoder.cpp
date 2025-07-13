@@ -3,7 +3,15 @@
 #include "dr_flac.h"
 
 bool FlacDecoder::load(const std::string& path) {
+
     m_flac = drflac_open_file(path.c_str(), nullptr);
+    if (!m_flac) return false;
+
+    // Basisdaten setzen
+    decodedAudio.sampleRate = m_flac->sampleRate;
+    decodedAudio.channels = m_flac->channels;
+    decodedAudio.totalFrames = m_flac->totalPCMFrameCount;
+    
     return m_flac != nullptr;
 }
 

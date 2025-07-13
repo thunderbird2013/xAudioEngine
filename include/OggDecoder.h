@@ -18,9 +18,12 @@ public:
     int getChannels() const override;
     uint64_t getCursor() const override;
 
+    const DecodedAudio& getDecodedAudio() const override { return decodedAudio; }
+
 private:
     struct stb_vorbis* vorbis = nullptr;
     stb_vorbis_info info{};
+    DecodedAudio decodedAudio;
     //bool initialized = false;
 };
 

@@ -59,42 +59,37 @@
 
 class AUDIOENGINE_API AudioEngine {
 public:
-    AudioEngine();
-    ~AudioEngine();
+    AudioEngine(); // Konstruktor, initialisiert libcurl
+    ~AudioEngine(); // Destruktor, gibt das Audio-Gerät frei
 
-    bool loadFile(const std::string& path);
-    bool loadURL(const std::string& url);
-    void play();
-    void stop();
-    void setVolume(float volume);
-    float getVolume() const;
-    bool seek(int frame);
-    bool isPlaying() const;
-    int  getCurrentFrame() const;
-    int  getSampleRate() const;
-    uint64_t getTotalFrames() const;
-    double getTotalTimeSeconds() const;
-    double getCurrentTimeSeconds() const;
+    bool     loadFile(const std::string& path);
+    bool     loadURL(const std::string& url);
+    void     play();
+    void     stop();
+    void     setVolume(float volume);
+    bool     seek(int frame);    
+    bool     initAudioDevice();
+    bool     initAudioDeviceWithAdapter(int deviceIndex);
+    float    getBPM();
+
     std::vector<std::string> getAvailableOutputDevices();
-    bool initAudioDevice();
-    bool initAudioDeviceWithAdapter(int deviceIndex);
-    float getBPM();
-    
 
+    
+    //const nur Lesen
+    float    getVolume() const;
+    bool     isPlaying() const;
+    int      getCurrentFrame() const;
+    int      getSampleRate() const;
+    uint64_t getTotalFrames() const;
+    double   getTotalTimeSeconds() const;
+    double   getCurrentTimeSeconds() const;    
+
+    //IDV1-Tags
+    std::string getTitle()  const;
+    std::string getArtist() const;
+    std::string getAlbum()  const;
 
 private:
-
-    std::string resolvePlaylist(const std::string& playlistUrl);
-    static void maCallback(ma_device* device, void* output, const void* input, ma_uint32 frameCount);
-
-    float analyzeBPM(float* input, uint_t numSamples);
-
-    void logError(const std::string& message);
-    void logDebug(const std::string& message);
-    
-    std::unique_ptr<AudioDecoder> decoder; // Aktueller Audio-Decoder
-    std::shared_ptr<StreamingBuffer> streamBuffer; 
-    std::unique_ptr<StreamingDownloader> downloader;
 
     std::string lastFilePath;
 
@@ -103,4 +98,20 @@ private:
     int channels = 0;
     bool Playing = true;
     ma_device device;    // Audio-Ausgabegerät
+    
+
+    std::string resolvePlaylist(const std::string& playlistUrl);
+    static void maCallback(ma_device* device, void* output, const void* input, ma_uint32 frameCount);
+
+
+    float analyzeBPM(float* input, uint_t numSamples);
+
+
+    void logError(const std::string& message);
+    void logDebug(const std::string& message);
+    
+    std::unique_ptr<AudioDecoder> decoder; // Aktueller Audio-Decoder
+    std::shared_ptr<StreamingBuffer> streamBuffer; 
+    std::unique_ptr<StreamingDownloader> downloader;
+
 };

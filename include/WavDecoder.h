@@ -16,8 +16,11 @@ public:
     uint64_t getCursor() const override;
     uint64_t getTotalFrames() const override;
 
+    const DecodedAudio& getDecodedAudio() const override { return decodedAudio; }
+
 private:
     drwav wav;
+    DecodedAudio decodedAudio;
     bool initialized = false;
     uint64_t currentFrame = 0;
 };

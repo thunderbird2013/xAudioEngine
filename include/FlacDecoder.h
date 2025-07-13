@@ -11,7 +11,9 @@ public:
     int getChannels() const override;
     uint64_t getCursor() const override;
     uint64_t getTotalFrames() const override; 
+    const DecodedAudio& getDecodedAudio() const override { return decodedAudio; }
 
 private:
     drflac* m_flac = nullptr;
+    DecodedAudio decodedAudio;
 };

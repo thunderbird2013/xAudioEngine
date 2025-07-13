@@ -12,13 +12,17 @@ public:
     uint64_t getCursor() const override;
     uint64_t getTotalFrames() const override;
     int getBitrateKbps() const;
+    const DecodedAudio& getDecodedAudio() const override { return decodedAudio; }
 
 private:
     drmp3 mp3{};
+    DecodedAudio decodedAudio;
     bool initialized = false;
     uint64_t m_currentFrame = 0;
     uint64_t totalFrames = 0;
     int sampleRate = 0;
     int channels = 0;
     int bitrateKbps = 0; 
+    std::string title, artist, album;
+    void readID3v1Tag(const std::string& path);
 };
