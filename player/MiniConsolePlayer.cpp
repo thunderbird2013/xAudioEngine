@@ -18,22 +18,54 @@ std::string path;
 std::atomic<float> g_bpm{-1.0f};  // -1.0f = noch nicht berechnet
 
 namespace fs = std::filesystem;
-const std::vector<std::string> supportedExtensions = { ".mp3", ".flac", ".ogg", ".wav" };
 
 // Hilfsfunktion: Alle Audio-Dateien in einem Verzeichnis finden
 std::vector<std::string> findAudioFiles(const std::string& directory) {
     std::vector<std::string> files;
+    const std::vector<std::string> supportedExtensions = { ".mp3", ".flac", ".ogg", ".wav" };
+
+    if (!fs::exists(directory)) {
+        std::cerr << "[FEHLER] Pfad existiert NICHT: " << directory << "\n";
+        return files;
+    }
+
+    if (!fs::is_directory(directory)) {
+        std::cerr << "[FEHLER] Pfad ist KEIN Verzeichnis: " << directory << "\n";
+        return files;
+    }
+
     for (const auto& entry : fs::directory_iterator(directory)) {
-        if (!entry.is_regular_file()) continue;
-        std::string ext = entry.path().extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if (std::find(supportedExtensions.begin(), supportedExtensions.end(), ext) != supportedExtensions.end()) {
-            files.push_back(entry.path().string());
+        try {
+            std::string ext = entry.path().extension().string();
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+            std::string fullPath = entry.path().string();            
+
+            if (entry.is_regular_file() &&
+                std::find(supportedExtensions.begin(), supportedExtensions.end(), ext) != supportedExtensions.end()) {
+
+                // Testweise Pfad-Objekt erzeugen (wirkt wie Validierungs-Check)
+                std::filesystem::path dummyCheck(fullPath);
+                (void)dummyCheck; // suppress unused warning
+
+                files.push_back(fullPath);
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << "[WARN] Datei übersprungen (Pfadproblem): "
+                      << entry.path() << "\n  Grund: " << e.what() << "\n";
+        } catch (...) {
+            std::cerr << "[WARN] Datei übersprungen (unbekannter Fehler): "
+                      << entry.path() << "\n";
         }
     }
-    std::sort(files.begin(), files.end()); // optional alphabetisch sortieren
+
+    std::sort(files.begin(), files.end());
+    //std::cout << "[DEBUG] " << files.size() << " Audiodateien gefunden.\n";
     return files;
 }
+
+
 
 
 // 256-Farb-Codes (ungefährer Verlauf)
@@ -89,75 +121,81 @@ void printUsage() {
     std::cout << "Usage:\n";
     std::cout << "  miniplayer [options] <file or URL>\n";
     std::cout << "Options:\n";
-    std::cout << "  -listdevice        Alle verfügbaren Ausgabegeräte anzeigen\n";
-    std::cout << "  -device <index>    Ausgabegerät auswählen (Index aus -listdevice)\n";
+    std::cout << "  -listdevice          Alle verfügbaren Ausgabegeräte anzeigen\n";
+    std::cout << "  -device <index>      Ausgabegerät auswählen (Index aus -listdevice)\n";
+    std::cout << "  -playlist <folder>   Alle unterstützten Audio-Dateien im angegebenen Ordner abspielen\n";
     std::cout << "Examples:\n";
     std::cout << "  miniplayer -listdevice\n";
-    std::cout << "  miniplayer -device 2 song.mp3\n\n";
+    std::cout << "  miniplayer -device 2 song.mp3\n";
+    std::cout << "  miniplayer -playlist Music\n";
+    std::cout << "  miniplayer -device 1 -playlist D:\\\\MeineMusik\n\n";
 }
 
 int main(int argc, char** argv) {
 
     SetConsoleOutputCP(CP_UTF8);  // UTF-8-Konsole
 
-    std::vector<std::string> playlist;
-    int trackIndex = 0;
+        // --- Argumente parsen ---
+        std::string playlistDir;
 
-  //  if (argc < 2) {
-  //      printUsage();
-  //      return 1;
-  //  }
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
 
-    if (argc < 2) {
-        playlist = findAudioFiles(".");
-        if (playlist.empty()) {
-            std::cerr << "Keine Audiodateien im aktuellen Ordner gefunden.\n";
-            return 1;
-        }
-        path = playlist[trackIndex];
-    } else {
-        // wie gehabt: Argumente auswerten
-       printUsage();
-       return 1;
-    }
-
-
-    // --- Argumente parsen ---
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-
-        if (arg == "-listdevice") {
-            auto devices = engine.getAvailableOutputDevices();
-            for (size_t j = 0; j < devices.size(); ++j) {
-                std::cout << "[" << j << "] " << devices[j] << "\n";
+            if (arg == "-listdevice") {
+                auto devices = engine.getAvailableOutputDevices();
+                for (size_t j = 0; j < devices.size(); ++j) {
+                    std::cout << "[" << j << "] " << devices[j] << "\n";
+                }
+                return 0;
+            } else if (arg == "-device" && i + 1 < argc) {
+                selectedDevice = std::stoi(argv[++i]);
+            } else if (arg == "-file" && i + 1 < argc) {
+                path = argv[++i];
+            } else if (arg == "-playlist" && i + 1 < argc) {
+                playlistDir = argv[++i];
+            } else if (arg[0] != '-') {
+                path = arg;
             }
-            return 0;
         }
-        else if (arg == "-device" && i + 1 < argc) {
-            selectedDevice = std::stoi(argv[++i]);
-        }
-        else if (arg[0] != '-') {
-            path = arg;
-        }
-    }
 
-    if (path.empty()) {
-        printUsage();
-        return 1;
-    }
+        // --- Playlist zuerst laden, falls angegeben ---
+        std::vector<std::string> playlist;
+        int trackIndex = 0;
 
-    // --- Laden der Datei/URL ---
-    if (path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0) {
-        if (!engine.loadURL(path)) {
-            std::cerr << "URL konnte nicht geladen werden: " << path << "\n";
+        if (!playlistDir.empty()) {
+            std::cout << "[DEBUG] Playlist-Ordner: " << playlistDir << "\n";
+            playlist = findAudioFiles(playlistDir);
+
+            if (playlist.empty()) {
+                std::cerr << "Keine Audiodateien im angegebenen Ordner gefunden.\n";
+                return 1;
+            }
+
+            path = playlist[trackIndex]; // Setze den ersten Track als Pfad          
+        }
+
+        // --- Wenn nichts geladen wurde, Hilfe anzeigen ---
+        if (path.empty()) {
+            printUsage();
             return 1;
         }
-    } else {
-        if (!engine.loadFile(path)) {
-            std::cerr << "Datei konnte nicht geladen werden: " << path << "\n";
+
+
+        // --- Laden der Datei/URL ---
+        bool loaded = false;
+
+        if (path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0) {
+            loaded = engine.loadURL(path);
+        } else {
+            std::cout << "[DEBUG] Lade lokale Datei: " << path << "\n";
+            loaded = engine.loadFile(path);
+        }
+
+        if (!loaded) {
+            std::cerr << "Konnte Datei/URL nicht laden: " << path << "\n";
             return 1;
         }
-    }
+       
 
     // --- Soundkarte initialisieren ---
     bool ok = false;
@@ -173,10 +211,10 @@ int main(int argc, char** argv) {
     }
 
 
-    engine.setVolume(0.9f);
-    engine.play();
+    engine.setVolume(0.9f); // Lautstärke auf 90% setzen
+    engine.play(); // Wiedergabe starten
 
-    analyzeBPMInBackground(engine);
+    analyzeBPMInBackground(engine); // BPM-Analyse im Hintergrund starten
 
     // --- Steuerung wie gehabt ---
     bool running = true;
@@ -296,21 +334,21 @@ int main(int argc, char** argv) {
                             analyzeBPMInBackground(engine);
                             clearConsole();
                         }
-                    break;
-                    clearConsole();
+                    break;                    
                 }
             } else {
                 switch (ch) {
                     case 'q': running = false; engine.stop(); break;
                     case 's': engine.stop(); break;
-                    case 'p': engine.play(); break;
-                    clearConsole();
+                    case 'p': engine.play(); break;                                       
                 }
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    clearConsole();
     std::cout << "\033[?25h";
+    std::cout << "\033[J";
     return 0;
 }
