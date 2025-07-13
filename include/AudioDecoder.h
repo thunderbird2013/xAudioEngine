@@ -34,14 +34,18 @@ struct DecodedAudio {
 
 class AudioDecoder {
 public:
-    virtual ~AudioDecoder() = default;
-    virtual bool load(const std::string& path) = 0;
-    virtual size_t decode(short* buffer, size_t framesToRead) = 0;
-    virtual bool seek(int frame) = 0;
-    virtual int getSampleRate() const = 0;
-    virtual int getChannels() const = 0;
-    virtual uint64_t getCursor() const = 0;
-    virtual uint64_t getTotalFrames() const = 0;
+    virtual             ~AudioDecoder() = default;
+    virtual bool        load(const std::string& path) = 0;
+    virtual size_t      decode(short* buffer, size_t framesToRead) = 0;
+    virtual bool        seek(int frame) = 0;
+    virtual int         getSampleRate() const = 0;
+    virtual int         getChannels() const = 0;
+    virtual size_t      getCurrentFrame() const = 0;
+    virtual uint64_t    getCursor() const = 0;
+    virtual uint64_t    getTotalFrames() const = 0;
+    virtual bool        isFinished() const {
+        return getCurrentFrame() >= getTotalFrames();
+    }
 
     virtual const DecodedAudio& getDecodedAudio() const {
         static DecodedAudio empty;

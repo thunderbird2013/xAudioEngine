@@ -306,16 +306,31 @@ void AudioEngine::maCallback(ma_device* device, void* output, const void*, ma_ui
 
     size_t framesRead = engine->decoder->decode(out, frameCount);
 
-
     if (framesRead < frameCount) {
         std::memset(out + framesRead * engine->channels, 0,
                     (frameCount - framesRead) * engine->channels * sizeof(short));
     }
 
-    if (framesRead == 0) {
+    if (framesRead == 0 && engine->decoder && engine->decoder->isFinished()) {
         engine->Playing = false;
-        return;
     }
+        // if (framesRead == 0) {
+        //     engine->Playing = false;
+        //     return;
+        // }
+
+        /*
+        if (framesRead == 0) {
+            uint64_t current = engine->decoder->getCurrentFrame();
+            uint64_t total   = engine->decoder->getTotalFrames();
+
+        if (current >= total) {
+            engine->Playing = false;
+        }
+        }
+        */
+
+
 }
 
 std::vector<std::string> AudioEngine::getAvailableOutputDevices() {

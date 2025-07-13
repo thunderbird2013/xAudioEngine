@@ -37,7 +37,7 @@ bool OggDecoder::load(const std::string& path) {
     }
 
     return true;
-    
+
 }
 
 size_t OggDecoder::decode(short* buffer, size_t framesToRead) {
@@ -63,4 +63,8 @@ uint64_t OggDecoder::getCursor() const {
 
 uint64_t OggDecoder::getTotalFrames() const {
     return stb_vorbis_stream_length_in_samples(vorbis);
+}
+
+size_t OggDecoder::getCurrentFrame() const {
+    return static_cast<size_t>(getCursor());
 }

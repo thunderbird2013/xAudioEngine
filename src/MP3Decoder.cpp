@@ -101,6 +101,10 @@ int MP3Decoder::getBitrateKbps() const {
     return bitrateKbps;
 }
 
+size_t MP3Decoder::getCurrentFrame() const {
+    return static_cast<size_t>(getCursor());
+}
+
 void MP3Decoder::readID3v1Tag(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) return;

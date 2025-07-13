@@ -55,6 +55,10 @@ uint64_t StreamMP3Decoder::getTotalFrames() const {
     return 0; // Bei Streams unbekannt
 }
 
+size_t StreamMP3Decoder::getCurrentFrame() const {
+    return 0;  // oder dein interner Frame-Zähler
+}
+
 size_t StreamMP3Decoder::readCallback(void* pUserData, void* pBufferOut, size_t bytesToRead) {
     StreamMP3Decoder* self = static_cast<StreamMP3Decoder*>(pUserData);
     return self->m_buffer.read(static_cast<uint8_t*>(pBufferOut), bytesToRead);

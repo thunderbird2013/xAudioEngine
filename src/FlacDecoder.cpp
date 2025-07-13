@@ -40,3 +40,7 @@ uint64_t FlacDecoder::getCursor() const {
     return m_flac ? m_flac->currentPCMFrame : 0;
 }   
 
+size_t FlacDecoder::getCurrentFrame() const {
+    return static_cast<size_t>(getCursor());
+}
+

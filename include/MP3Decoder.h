@@ -11,6 +11,7 @@ public:
     int getChannels() const override;
     uint64_t getCursor() const override;
     uint64_t getTotalFrames() const override;
+    size_t getCurrentFrame() const override;
     int getBitrateKbps() const;
     const DecodedAudio& getDecodedAudio() const override { return decodedAudio; }
 

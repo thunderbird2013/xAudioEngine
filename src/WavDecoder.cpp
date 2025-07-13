@@ -105,3 +105,6 @@ uint64_t WavDecoder::getCursor() const {
 uint64_t WavDecoder::getTotalFrames() const {
     return wav.totalPCMFrameCount;
 }
+size_t WavDecoder::getCurrentFrame() const {
+    return static_cast<size_t>(getCursor());
+}
